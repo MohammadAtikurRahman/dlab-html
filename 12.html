@@ -2024,33 +2024,41 @@
             history.back();
           }
         });
+        player.on("play", function() {
+    startTime = player.currentTime();
+    startDate = new Date();
+    currentVideoData = {
+        player: player,
+        videoSrc: videoSrc,
+        startTime: startTime,
+        startDate: startDate
+    };
+});
 
-        player.on("play", function () {
-          startTime = player.currentTime();
-          startDate = new Date();
-          currentVideoData = {
-            player: player,
-            videoSrc: videoSrc,
-            startTime: startTime,
-            startDate: startDate,
-          };
-        });
+player.on("pause", function() {
+    if (currentVideoData) {
+        saveCurrentPlaybackData(
+            currentVideoData.player,
+            currentVideoData.videoSrc,
+            currentVideoData.startTime,
+            currentVideoData.startDate
+        );
+        currentVideoData = null;
+    }
+});
 
-        player.on("pause", function () {
-          if (currentVideoData) {
-            videoData.push(currentVideoData);
-            currentVideoData = null;
-          }
-          saveCurrentPlaybackData(player, videoSrc, startTime, startDate);
-        });
+player.on("ended", function() {
+    if (currentVideoData) {
+        saveCurrentPlaybackData(
+            currentVideoData.player,
+            currentVideoData.videoSrc,
+            currentVideoData.startTime,
+            currentVideoData.startDate
+        );
+        currentVideoData = null;
+    }
+});
 
-        player.on("ended", function () {
-          if (currentVideoData) {
-            videoData.push(currentVideoData);
-            currentVideoData = null;
-          }
-          videoContainer.classList.remove("faux-fullscreen");
-        });
       }
 
       window.addEventListener("beforeunload", function (e) {
@@ -2075,20 +2083,21 @@
       });
 
       function saveCurrentPlaybackData(player, videoSrc, startTime, startDate) {
-        var endDate = new Date();
-        var endTime = player.currentTime();
-        var duration = (endTime - startTime) / 60;
-        var videoInfo = {
-          video_name: videoSrc.split("/").pop().split(".")[0],
-          location: videoSrc,
-          pl_start: Math.floor(startTime * 100) / 100,
-          start_date_time: startDate.toLocaleString(),
-          pl_end: Math.floor(endTime * 100) / 100,
-          end_date_time: endDate.toLocaleString(),
-          duration: duration.toFixed(2),
-        };
-        videoData.push(videoInfo);
-      }
+    var endDate = new Date();
+    var endTime = player.currentTime();
+    var duration = (endTime - startTime) / 60;
+    var videoInfo = {
+        video_name: videoSrc.split("/").pop().split(".")[0],
+        location: videoSrc,
+        pl_start: Math.floor(startTime * 100) / 100,
+        start_date_time: startDate.toLocaleString(),
+        pl_end: Math.floor(endTime * 100) / 100,
+        end_date_time: endDate.toLocaleString(),
+        duration: duration.toFixed(2),
+    };
+    videoData.push(videoInfo);
+}
+
 
       function saveJsonToFile(data, filename) {
         var csvContent = convertToCSV(data);
