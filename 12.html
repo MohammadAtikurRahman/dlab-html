@@ -2062,17 +2062,29 @@ player.on("ended", function() {
       }
 
       window.addEventListener("beforeunload", function (e) {
-        if (currentVideoData) {
-          videoData.push(currentVideoData);
-          currentVideoData = null;
-        }
-        if (videoData.length > 0) {
-          saveJsonToFile(videoData, "video_information.csv");
-        }
+    if (currentVideoData) {
+        var endDate = new Date();
+        var endTime = currentVideoData.player.currentTime();
+        var duration = (endTime - currentVideoData.startTime) / 60;
+        var videoInfo = {
+            video_name: currentVideoData.videoSrc.split("/").pop().split(".")[0],
+            location: currentVideoData.videoSrc,
+            pl_start: Math.floor(currentVideoData.startTime * 100) / 100,
+            start_date_time: currentVideoData.startDate.toLocaleString(),
+            pl_end: Math.floor(endTime * 100) / 100,
+            end_date_time: endDate.toLocaleString(),
+            duration: duration.toFixed(2),
+        };
+        videoData.push(videoInfo);
+        currentVideoData = null;
+    }
+    if (videoData.length > 0) {
+        saveJsonToFile(videoData, "video_information.csv");
+    }
 
-        e.returnValue = "Are you sure you want to exit?";
-        return e.returnValue;
-      });
+    e.returnValue = "Are you sure you want to exit?";
+    return e.returnValue;
+});
 
       window.addEventListener("popstate", function (event) {
         currentVideoData = null; // Reset current video data when navigating back
