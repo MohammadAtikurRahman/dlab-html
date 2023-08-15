@@ -1985,169 +1985,180 @@
       var players = [];
       var videoContainers = [];
       var currentVideoData = null;
-
+      var csvDownloaded = false;  // Initialize the flag
+  
       for (let i = 0; i < coll.length; i++) {
-        coll[i].addEventListener("click", function () {
-          this.classList.toggle("active");
-          var content = this.nextElementSibling;
-          content.style.display =
-            content.style.display === "block" ? "none" : "block";
-        });
+          coll[i].addEventListener("click", function () {
+              this.classList.toggle("active");
+              var content = this.nextElementSibling;
+              content.style.display = content.style.display === "block" ? "none" : "block";
+          });
       }
-
+  
       for (let i = 0; i < videoLinks.length; i++) {
-        let videoLink = videoLinks[i];
-        let videoSrc = videoLink.getAttribute("data-src");
-        let videoContainer = videoLink.parentElement.nextElementSibling;
-        let videoElem = videoContainer.children[0];
-        let player = videojs(videoElem);
-
-        videoContainers.push(videoContainer);
-        players.push(player);
-
-        let startTime = 0;
-        let startDate = "";
-
-        videoLink.addEventListener("click", function () {
-          player.src({ type: "video/mp4", src: videoSrc });
-          player.load();
-
-          if (videoContainer.style.display === "none") {
-            videoContainer.style.display = "block";
-            videoContainer.classList.add("faux-fullscreen");
-            player.play();
-            history.pushState({ videoOpened: true, index: i }, "");
-          } else {
-            videoContainer.style.display = "none";
-            videoContainer.classList.remove("faux-fullscreen");
-            player.pause();
-            history.back();
-          }
-        });
-        player.on("play", function() {
-    startTime = player.currentTime();
-    startDate = new Date();
-    currentVideoData = {
-        player: player,
-        videoSrc: videoSrc,
-        startTime: startTime,
-        startDate: startDate
-    };
-});
-
-player.on("pause", function() {
-    if (currentVideoData) {
-        saveCurrentPlaybackData(
-            currentVideoData.player,
-            currentVideoData.videoSrc,
-            currentVideoData.startTime,
-            currentVideoData.startDate
-        );
-        currentVideoData = null;
-    }
-});
-
-player.on("ended", function() {
-    if (currentVideoData) {
-        saveCurrentPlaybackData(
-            currentVideoData.player,
-            currentVideoData.videoSrc,
-            currentVideoData.startTime,
-            currentVideoData.startDate
-        );
-        currentVideoData = null;
-    }
-});
-
+          let videoLink = videoLinks[i];
+          let videoSrc = videoLink.getAttribute("data-src");
+          let videoContainer = videoLink.parentElement.nextElementSibling;
+          let videoElem = videoContainer.children[0];
+          let player = videojs(videoElem);
+  
+          videoContainers.push(videoContainer);
+          players.push(player);
+  
+          let startTime = 0;
+          let startDate = "";
+  
+          videoLink.addEventListener("click", function () {
+              player.src({ type: "video/mp4", src: videoSrc });
+              player.load();
+  
+              if (videoContainer.style.display === "none") {
+                  videoContainer.style.display = "block";
+                  videoContainer.classList.add("faux-fullscreen");
+                  player.play();
+                  history.pushState({ videoOpened: true, index: i }, "");
+              } else {
+                  videoContainer.style.display = "none";
+                  videoContainer.classList.remove("faux-fullscreen");
+                  player.pause();
+                  history.back();
+              }
+          });
+  
+          player.on("play", function () {
+              startTime = player.currentTime();
+              startDate = new Date();
+              currentVideoData = {
+                  player: player,
+                  videoSrc: videoSrc,
+                  startTime: startTime,
+                  startDate: startDate
+              };
+          });
+  
+          player.on("pause", function () {
+              if (currentVideoData) {
+                  saveCurrentPlaybackData(
+                      currentVideoData.player,
+                      currentVideoData.videoSrc,
+                      currentVideoData.startTime,
+                      currentVideoData.startDate
+                  );
+                  currentVideoData = null;
+              }
+          });
+  
+          player.on("ended", function () {
+              if (currentVideoData) {
+                  saveCurrentPlaybackData(
+                      currentVideoData.player,
+                      currentVideoData.videoSrc,
+                      currentVideoData.startTime,
+                      currentVideoData.startDate
+                  );
+                  currentVideoData = null;
+              }
+          });
       }
-
-      window.addEventListener("beforeunload", function (e) {
-    if (currentVideoData) {
-        var endDate = new Date();
-        var endTime = currentVideoData.player.currentTime();
-        var duration = (endTime - currentVideoData.startTime) / 60;
-        var videoInfo = {
-            video_name: currentVideoData.videoSrc.split("/").pop().split(".")[0],
-            location: currentVideoData.videoSrc,
-            pl_start: Math.floor(currentVideoData.startTime * 100) / 100,
-            start_date_time: currentVideoData.startDate.toLocaleString(),
-            pl_end: Math.floor(endTime * 100) / 100,
-            end_date_time: endDate.toLocaleString(),
-            duration: duration.toFixed(2),
-        };
-        videoData.push(videoInfo);
-        currentVideoData = null;
-    }
-    if (videoData.length > 0) {
-        saveJsonToFile(videoData, "video_information.csv");
-    }
-
-    e.returnValue = "Are you sure you want to exit?";
-    return e.returnValue;
-});
-
+  
       window.addEventListener("popstate", function (event) {
-        currentVideoData = null; // Reset current video data when navigating back
-
-        if (event.state && event.state.videoOpened) {
-          location.reload();
-        }
-      });
-
-      function saveCurrentPlaybackData(player, videoSrc, startTime, startDate) {
-    var endDate = new Date();
-    var endTime = player.currentTime();
-    var duration = (endTime - startTime) / 60;
-    var videoInfo = {
-        video_name: videoSrc.split("/").pop().split(".")[0],
-        location: videoSrc,
-        pl_start: Math.floor(startTime * 100) / 100,
-        start_date_time: startDate.toLocaleString(),
-        pl_end: Math.floor(endTime * 100) / 100,
-        end_date_time: endDate.toLocaleString(),
-        duration: duration.toFixed(2),
-    };
-    videoData.push(videoInfo);
-}
-
-
-      function saveJsonToFile(data, filename) {
-        var csvContent = convertToCSV(data);
-        var file = new Blob([csvContent], { type: "text/csv" });
-        var url = URL.createObjectURL(file);
-
-        var a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        a.style.display = "none";
-        document.body.appendChild(a);
-        a.click();
-
-        setTimeout(function () {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }, 0);
-      }
-
-      function convertToCSV(objArray) {
-        var array =
-          typeof objArray != "object" ? JSON.parse(objArray) : objArray;
-        var str = "";
-        var headers =
-          Object.keys(array[0])
-            .map((header) => `"${header}"`)
-            .join(",") + "\r\n";
-
-        for (var i = 0; i < array.length; i++) {
-          var line = "";
-          for (var index in array[i]) {
-            if (line != "") line += ",";
-            line += `"${array[i][index]}"`;
+          if (!csvDownloaded && currentVideoData) {
+              saveCurrentPlaybackData(
+                  currentVideoData.player,
+                  currentVideoData.videoSrc,
+                  currentVideoData.startTime,
+                  currentVideoData.startDate
+              );
+              currentVideoData = null;
           }
-          str += line + "\r\n";
-        }
-        return headers + str;
+  
+          if (!csvDownloaded && videoData.length > 0) {
+              saveJsonToFile(videoData, "video_information.csv");
+              csvDownloaded = true;
+          }
+  
+          if (event.state && event.state.videoOpened) {
+              location.reload();
+          }
+      });
+  
+      window.addEventListener("beforeunload", function (e) {
+          if (!csvDownloaded && currentVideoData) {
+              var endDate = new Date();
+              var endTime = currentVideoData.player.currentTime();
+              var duration = (endTime - currentVideoData.startTime) / 60;
+              var videoInfo = {
+                  video_name: currentVideoData.videoSrc.split("/").pop().split(".")[0],
+                  location: currentVideoData.videoSrc,
+                  pl_start: Math.floor(currentVideoData.startTime * 100) / 100,
+                  start_date_time: currentVideoData.startDate.toLocaleString(),
+                  pl_end: Math.floor(endTime * 100) / 100,
+                  end_date_time: endDate.toLocaleString(),
+                  duration: duration.toFixed(2)
+              };
+              videoData.push(videoInfo);
+              currentVideoData = null;
+          }
+  
+          if (!csvDownloaded && videoData.length > 0) {
+              saveJsonToFile(videoData, "video_information.csv");
+              csvDownloaded = true;
+          }
+  
+          e.returnValue = "Are you sure you want to exit?";
+          return e.returnValue;
+      });
+  
+      function saveCurrentPlaybackData(player, videoSrc, startTime, startDate) {
+          var endDate = new Date();
+          var endTime = player.currentTime();
+          var duration = (endTime - startTime) / 60;
+          var videoInfo = {
+              video_name: videoSrc.split("/").pop().split(".")[0],
+              location: videoSrc,
+              pl_start: Math.floor(startTime * 100) / 100,
+              start_date_time: startDate.toLocaleString(),
+              pl_end: Math.floor(endTime * 100) / 100,
+              end_date_time: endDate.toLocaleString(),
+              duration: duration.toFixed(2)
+          };
+          videoData.push(videoInfo);
       }
-    </script>
+  
+      function saveJsonToFile(data, filename) {
+          var csvContent = convertToCSV(data);
+          var file = new Blob([csvContent], { type: "text/csv" });
+          var url = URL.createObjectURL(file);
+  
+          var a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          a.style.display = "none";
+          document.body.appendChild(a);
+          a.click();
+  
+          setTimeout(function () {
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+          }, 0);
+      }
+  
+      function convertToCSV(objArray) {
+          var array = typeof objArray != "object" ? JSON.parse(objArray) : objArray;
+          var str = "";
+          var headers = Object.keys(array[0]).map((header) => `"${header}"`).join(",") + "\r\n";
+  
+          for (var i = 0; i < array.length; i++) {
+              var line = "";
+              for (var index in array[i]) {
+                  if (line != "") line += ",";
+                  line += `"${array[i][index]}"`;
+              }
+              str += line + "\r\n";
+          }
+          return headers + str;
+      }
+  </script>
+  
   </body>
 </html>
